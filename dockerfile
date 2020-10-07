@@ -35,6 +35,7 @@ WORKDIR /home/rusty/embed-c-rust-sample
 COPY --chown=rusty:rusty ./build.rs .
 COPY --chown=rusty:rusty ./wrapper.h .
 COPY --chown=rusty:rusty ./Cargo.toml .
+COPY --chown=rusty:rusty ./BaltimoreCyberTrust.pem .
 COPY --chown=rusty:rusty ./src/ ./src/
 RUN cargo build
 
