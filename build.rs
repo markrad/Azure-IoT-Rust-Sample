@@ -4,7 +4,7 @@ use std::env;
 use std::path::PathBuf;
 
 fn main() {
-    // Tell cargo to tell rustc to link the system bzip2
+    // Tell cargo to tell rustc to link the azure sdk libraries
     // shared library.
     println!("cargo:rustc-link-search=native=C:/Users/markrad/s/azure-sdk-for-c-win/build/sdk/src/azure/core/Debug");
     println!("cargo:rustc-link-search=native=C:/Users/markrad/s/azure-sdk-for-c-win/build/sdk/src/azure/iot/Debug");
@@ -13,7 +13,13 @@ fn main() {
     println!("cargo:rustc-link-lib=az_core");
     println!("cargo:rustc-link-lib=az_iot_common");
     println!("cargo:rustc-link-lib=az_iot_hub");
-    println!("cargo:rustc-link-lib=az_win32");
+
+    if env::var("CARGO_CFG_TARGET_FAMILY").unwrap().eq("windows") {
+        println!("cargo:rustc-link-lib=az_win32");
+    }
+    else {
+        println!("cargo:rustc-link-lib=az_posix");
+    }
 
     // Tell cargo to invalidate the built crate whenever the wrapper changes
     println!("cargo:rerun-if-changed=wrapper.h");
