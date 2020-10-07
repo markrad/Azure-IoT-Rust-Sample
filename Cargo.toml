@@ -1,5 +1,5 @@
 [package]
-name = "hw"
+name = "azure-iot-rust-sample"
 version = "0.1.0"
 authors = ["Mark Radbourne <markrad@msn.com>"]
 edition = "2018"
