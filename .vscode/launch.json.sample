@@ -1,0 +1,37 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    //
+    // Sample launch.json for use with VS Code
+    // Rename to launch.json
+    // Add connection string below
+    //
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "(Windows) Launch",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/target/debug/azure-iot-rust-sample.exe",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": "${defaultBuildTask}",
+            "environment": [
+                // ------ SAS Token Authentication
+                {
+                    "name": "AZ_IOT_CONNECTION_STRING",
+                    "value": "<Add your device connection string here>"
+                },
+
+                // Debugging
+                {
+                    "name": "RUST_BACKTRACE",
+                    "value": "1"
+                }
+            ],
+            "externalConsole": false
+        }
+    ]
+}
