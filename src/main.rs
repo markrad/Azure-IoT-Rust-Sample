@@ -45,9 +45,22 @@ fn get_config_value(display_name: &str,
             return Ok(value);
         },
         Err(e) => {
-            println!("failed {}", e);
-            return Err(az_result_core_AZ_ERROR_ARG);
-        }
+            match default_value {
+                Some(default) => {
+                    if display {
+                        println!("{}", default);
+                    }
+                    else {
+                        println!("***");
+                    }
+                    return Ok(default.to_string());
+                },
+                None => {
+                    println!("failed {}", e);
+                    return Err(az_result_core_AZ_ERROR_ARG);
+                }
+            }
+        },
     }
 }
 
@@ -58,15 +71,19 @@ fn split_connection_string(connection_string: &String) -> Result<(String, String
     let mut host_name: String = String::new();
     let mut sas_key: String = String::new();
 
+    let deviceid: &str = "deviceid=";
+    let hostname: &str = "hostname=";
+    let sharedaccesskey: &str = "sharedaccesskey=";
+
     for (i, part) in parts.iter().enumerate() {
-        if part.to_ascii_lowercase().starts_with("deviceid=") {
-            device_id = part[9..].to_string();
+        if part.to_ascii_lowercase().starts_with(deviceid) {
+            device_id = part[deviceid.len()..].to_string();
         }
-        else if part.to_ascii_lowercase().starts_with("hostname=") {
-            host_name = part[9..].to_string();
+        else if part.to_ascii_lowercase().starts_with(hostname) {
+            host_name = part[hostname.len()..].to_string();
         }
-        else if part.to_ascii_lowercase().starts_with("sharedaccesskey=") {
-            sas_key = part[16..].to_string();
+        else if part.to_ascii_lowercase().starts_with(sharedaccesskey) {
+            sas_key = part[sharedaccesskey.len()..].to_string();
         }
     }
 
@@ -84,6 +101,7 @@ struct Config {
     sas_key: String,
     decoded_sas_key: Vec<u8>,
     port: i32,
+    ttl: u32,
     mqtt_client_id: String,
     mqtt_user_id: String,
     mqtt_publish_topic: String,
@@ -142,9 +160,9 @@ fn az_func_wrapper(rc: az_result_core) -> Result<az_result_core,az_result_core> 
     }
 }
 
-fn get_password(client: &az_iot_hub_client, config: &Config, ttl: u64) -> Result<String, az_result_core> {
+fn get_password(client: &az_iot_hub_client, config: &Config) -> Result<String, az_result_core> {
     
-    let epoch = SystemTime::now().duration_since(UNIX_EPOCH).expect("Could not get time").as_secs() + ttl;
+    let epoch = SystemTime::now().duration_since(UNIX_EPOCH).expect("Could not get time").as_secs() + config.ttl as u64;
     let mut signature_vector: Vec<u8> = Vec::with_capacity(200);
     let signature = get_span_out_from_vector(&mut signature_vector);
     let mut work = get_empty_span();
@@ -196,12 +214,13 @@ fn main() {
         sas_key: String::new(),
         decoded_sas_key: Vec::new(),
         port: 8883,
+        ttl: 3600,
         mqtt_client_id: String::new(),
         mqtt_user_id: String::new(),
         mqtt_publish_topic: String::new(),
     };
 
-    config.connection_string = get_config_value("Connection String", ENV_CONNECTION_STRING, Option::None, true, true)
+    config.connection_string = get_config_value("Connection String", ENV_CONNECTION_STRING, Option::None, true, false)
         .expect("Failed to retrieve connection string");
 
     let parts = split_connection_string(&config.connection_string)
@@ -277,7 +296,7 @@ fn main() {
     println!("mqtt_publish_topic={}", config.mqtt_publish_topic);
 
     let mut password: String = "".to_string();
-    match get_password(&client, &config, 3600) {
+    match get_password(&client, &config) {
         Err(err) => {
             print!("Failed to generate password {}", err);
         }
@@ -286,7 +305,7 @@ fn main() {
 
     println!("password={}", password);
 
-    let uri = "ssl://".to_string() + &config.host_name + ":" + &config.port.to_string(); // ":8883";
+    let uri = "ssl://".to_string() + &config.host_name + ":" + &config.port.to_string();
     println!("uri={}", uri);
 
     let create_opts = mqtt::CreateOptionsBuilder::new()
@@ -306,6 +325,7 @@ fn main() {
         .user_name(config.mqtt_user_id)
         .password(password)
         .ssl_options(ssl_opts)
+        .automatic_reconnect(time::Duration::new(1, 0), time::Duration::new(60 * 60, 0))
         .finalize();
 
     let mqtt_client = mqtt::Client::new(create_opts).expect("Failed to create client");
