@@ -27,8 +27,6 @@ fn main() {
         .header("wrapper.h")
         // Add additional Clang include directories
         .clang_arg("-IC:/Users/markrad/s/azure-sdk-for-c-win/sdk/inc")
-        .clang_arg("-IC:/Users/markrad/s/BearSSL/inc")
-        .clang_arg("-IC:/Users/markrad/s/MQTT-C/include")
         // Tell cargo to invalidate the built crate whenever any of the
         // included header files changed.
         .parse_callbacks(Box::new(bindgen::CargoCallbacks))
